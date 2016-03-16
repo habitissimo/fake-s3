@@ -1,9 +1,13 @@
 require 'thor'
+require 'logger'
+require 'fakes3/logging'
 require 'fakes3/server'
 require 'fakes3/version'
 
 module FakeS3
   class CLI < Thor
+    include Logging
+
     default_task("server")
 
     desc "server", "Run a server on a particular hostname"
@@ -14,8 +18,18 @@ module FakeS3
     method_option :limit, :aliases => '-l', :type => :string, :desc => 'Rate limit for serving (ie. 50K, 1.0M)'
     method_option :sslcert, :type => :string, :desc => 'Path to SSL certificate'
     method_option :sslkey, :type => :string, :desc => 'Path to SSL certificate key'
+    method_option :log, :type => :string, :desc => 'Log level'
 
     def server
+      Logging.log_level = case options[:log]
+        when "debug" then Logger::DEBUG
+        when "info" then Logger::INFO
+        when "warn" then Logger::WARN
+        when "error" then Logger::ERROR
+        when "critical","fatal" then Logger::FATAL
+        else Logger::INFO
+      end
+
       store = nil
       if options[:root]
         root = File.expand_path(options[:root])
@@ -52,7 +66,7 @@ module FakeS3
         abort "If you specify an SSL certificate you must also specify an SSL certificate key"
       end
 
-      puts "Loading FakeS3 with #{root} on port #{options[:port]} with hostname #{hostname}"
+      logger.info "Loading FakeS3 with #{root} on port #{options[:port]} with hostname #{hostname}"
       server = FakeS3::Server.new(address,options[:port],store,hostname,ssl_cert_path,ssl_key_path)
       server.serve
     end

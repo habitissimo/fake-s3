@@ -4,6 +4,7 @@ require 'webrick/https'
 require 'openssl'
 require 'securerandom'
 require 'cgi'
+require 'fakes3/logging'
 require 'fakes3/file_store'
 require 'fakes3/xml_adapter'
 require 'fakes3/bucket_query'
@@ -13,6 +14,8 @@ require 'ipaddr'
 
 module FakeS3
   class Request
+    include Logging
+
     CREATE_BUCKET = "CREATE_BUCKET"
     LIST_BUCKETS = "LIST_BUCKETS"
     LS_BUCKET = "LS_BUCKET"
@@ -31,20 +34,22 @@ module FakeS3
                   :path,:is_path_style,:query,:http_verb
 
     def inspect
-      puts "-----Inspect FakeS3 Request"
-      puts "Type: #{@type}"
-      puts "Is Path Style: #{@is_path_style}"
-      puts "Request Method: #{@method}"
-      puts "Bucket: #{@bucket}"
-      puts "Object: #{@object}"
-      puts "Src Bucket: #{@src_bucket}"
-      puts "Src Object: #{@src_object}"
-      puts "Query: #{@query}"
-      puts "-----Done"
+      logger.debug "-----Inspect FakeS3 Request"
+      logger.debug "Type: #{@type}"
+      logger.debug "Is Path Style: #{@is_path_style}"
+      logger.debug "Request Method: #{@method}"
+      logger.debug "Bucket: #{@bucket}"
+      logger.debug "Object: #{@object}"
+      logger.debug "Src Bucket: #{@src_bucket}"
+      logger.debug "Src Object: #{@src_object}"
+      logger.debug "Query: #{@query}"
+      logger.debug "-----Done"
     end
   end
 
   class Servlet < WEBrick::HTTPServlet::AbstractServlet
+    include Logging
+
     def initialize(server,store,hostname)
       super(server)
       @store = store
@@ -494,13 +499,13 @@ module FakeS3
     end
 
     def dump_request(request)
-      puts "----------Dump Request-------------"
-      puts request.request_method
-      puts request.path
+      logger.debug "----------Dump Request-------------"
+      logger.debug request.request_method
+      logger.debug request.path
       request.each do |k,v|
-        puts "#{k}:#{v}"
+        logger.debug "#{k}:#{v}"
       end
-      puts "----------End Dump -------------"
+      logger.debug "----------End Dump -------------"
     end
   end
 
@@ -515,7 +520,10 @@ module FakeS3
       @ssl_key_path = ssl_key_path
       webrick_config = {
         :BindAddress => @address,
-        :Port => @port
+        :Port => @port,
+        :AccessLog => [
+          [$stdout, WEBrick::AccessLog::COMMON_LOG_FORMAT],
+        ],
       }
       if !@ssl_cert_path.to_s.empty?
         webrick_config.merge!(
