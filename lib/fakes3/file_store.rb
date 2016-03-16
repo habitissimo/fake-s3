@@ -18,10 +18,11 @@ module FakeS3
     # sub second precision.
     SUBSECOND_PRECISION = 3
 
-    def initialize(root)
+    def initialize(root, create_buckets)
       @root = root
       @buckets = []
       @bucket_hash = {}
+      @create_buckets = create_buckets
       Dir[File.join(root,"*")].each do |bucket|
         bucket_name = File.basename(bucket)
         bucket_obj = Bucket.new(bucket_name,Time.now,[])
@@ -58,6 +59,10 @@ module FakeS3
     end
 
     def get_bucket(bucket)
+      if !@bucket_hash[bucket] and @create_buckets
+        logger.debug("Created on-demand bucket #{bucket} because --create_buckets was enabled")
+        create_bucket(bucket)
+      end
       @bucket_hash[bucket]
     end
 

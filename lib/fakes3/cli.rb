@@ -18,6 +18,7 @@ module FakeS3
     method_option :limit, :aliases => '-l', :type => :string, :desc => 'Rate limit for serving (ie. 50K, 1.0M)'
     method_option :sslcert, :type => :string, :desc => 'Path to SSL certificate'
     method_option :sslkey, :type => :string, :desc => 'Path to SSL certificate key'
+    method_option :create_buckets, :type => :boolean, :desc => 'Create non existing buckets when accessed'
     method_option :log, :type => :string, :desc => 'Log level'
 
     def server
@@ -34,7 +35,7 @@ module FakeS3
       if options[:root]
         root = File.expand_path(options[:root])
         # TODO Do some sanity checking here
-        store = FileStore.new(root)
+        store = FileStore.new(root, options[:create_buckets])
       end
 
       if store.nil?
