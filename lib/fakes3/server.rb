@@ -57,6 +57,8 @@ module FakeS3
       @port = server.config[:Port]
       @root_hostnames = [hostname,'localhost','s3.amazonaws.com','s3.localhost']
       @replicate = replicate
+      escaped_hostnames = @root_hostnames.map { |host| Regexp.escape(host) }
+      @bucket_host_regex = Regexp.new('^(.*?)\.(?:%s)$' % escaped_hostnames.join('|'))
     end
 
     def validate_request(request)
@@ -479,8 +481,11 @@ module FakeS3
       s_req.is_path_style = true
 
       if !@root_hostnames.include?(host) && !(IPAddr.new(host) rescue nil)
-        s_req.bucket = host.split(".")[0]
-        s_req.is_path_style = false
+        match = @bucket_host_regex.match(host)
+        if match
+          s_req.bucket = match[1]
+          s_req.is_path_style = false
+        end
       end
 
       s_req.http_verb = webrick_req.request_method
