@@ -1,0 +1,4 @@
+Dockerfile
+.git
+.dockerignore
+test_root
