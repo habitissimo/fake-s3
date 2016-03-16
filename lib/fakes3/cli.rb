@@ -19,6 +19,7 @@ module FakeS3
     method_option :sslcert, :type => :string, :desc => 'Path to SSL certificate'
     method_option :sslkey, :type => :string, :desc => 'Path to SSL certificate key'
     method_option :create_buckets, :type => :boolean, :desc => 'Create non existing buckets when accessed'
+    method_option :replicate, :type => :boolean, :desc => 'Clone not found objects from equivalent bucket in a real S3 enpoint'
     method_option :log, :type => :string, :desc => 'Log level'
 
     def server
@@ -68,7 +69,7 @@ module FakeS3
       end
 
       logger.info "Loading FakeS3 with #{root} on port #{options[:port]} with hostname #{hostname}"
-      server = FakeS3::Server.new(address,options[:port],store,hostname,ssl_cert_path,ssl_key_path)
+      server = FakeS3::Server.new(address,options[:port],store,hostname,ssl_cert_path,ssl_key_path,options[:replicate])
       server.serve
     end
 

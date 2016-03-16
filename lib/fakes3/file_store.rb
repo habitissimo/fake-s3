@@ -6,6 +6,7 @@ require 'fakes3/bucket'
 require 'fakes3/rate_limitable_file'
 require 'digest/md5'
 require 'yaml'
+require 'net/http'
 
 module FakeS3
   class FileStore
@@ -105,6 +106,24 @@ module FakeS3
       rescue
         logger.error($!.message)
         $!.backtrace.each { |line| logger.error(line) }
+        return nil
+      end
+    end
+
+    def replicate_object(bucket, object_name, request)
+      bucket_object = get_bucket(bucket)
+      logger.debug "Fetching resource #{object_name} from bucket \"#{bucket}\""
+      logger.debug "GET http://#{bucket}/#{object_name}"
+      Net::HTTP.start(bucket) do |http|
+        res = http.get("/#{object_name}")
+        if res.code == "200"
+          do_store_object(bucket_object, object_name, res.body, request)
+          return get_object(bucket, object_name, request)
+        else
+          logger.error "Bad response while replicating object,"\
+            " \"fetching url http://#{bucket}/#{object_name}\" got response"\
+            " code #{res.code} #{res.to_hash}"
+        end
         return nil
       end
     end

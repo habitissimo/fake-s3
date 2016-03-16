@@ -50,12 +50,13 @@ module FakeS3
   class Servlet < WEBrick::HTTPServlet::AbstractServlet
     include Logging
 
-    def initialize(server,store,hostname)
+    def initialize(server,store,hostname,replicate)
       super(server)
       @store = store
       @hostname = hostname
       @port = server.config[:Port]
       @root_hostnames = [hostname,'localhost','s3.amazonaws.com','s3.localhost']
+      @replicate = replicate
     end
 
     def validate_request(request)
@@ -98,6 +99,12 @@ module FakeS3
         response['Content-Type'] = 'application/xml'
       when 'GET'
         real_obj = @store.get_object(s_req.bucket,s_req.object,request)
+        if !real_obj and @replicate
+          logger.debug("File not found, but replicate is enabled, will try to replicate file")
+          @store.replicate_object(s_req.bucket,s_req.object,request)
+          real_obj = @store.get_object(s_req.bucket,s_req.object,request)
+        end
+
         if !real_obj
           response.status = 404
           response.body = XmlAdapter.error_no_such_key(s_req.object)
@@ -524,13 +531,15 @@ module FakeS3
 
 
   class Server
-    def initialize(address,port,store,hostname,ssl_cert_path,ssl_key_path)
+    def initialize(address,port,store,hostname,ssl_cert_path,ssl_key_path,replicate)
       @address = address
       @port = port
       @store = store
       @hostname = hostname
       @ssl_cert_path = ssl_cert_path
       @ssl_key_path = ssl_key_path
+      @replicate = replicate
+
       webrick_config = {
         :BindAddress => @address,
         :Port => @port,
@@ -551,7 +560,7 @@ module FakeS3
     end
 
     def serve
-      @server.mount "/", Servlet, @store,@hostname
+      @server.mount "/", Servlet, @store,@hostname,@replicate
       trap "INT" do @server.shutdown end
       @server.start
     end
