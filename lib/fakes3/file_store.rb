@@ -79,10 +79,11 @@ module FakeS3
       @bucket_hash.delete(bucket_name)
     end
 
-    def get_object(bucket,object_name, request)
+    def get_object(bucket, object_name, request)
       begin
         real_obj = S3Object.new
         obj_root = File.join(@root,bucket,object_name,SHUCK_METADATA_DIR)
+        return nil unless File.exist? obj_root
         metadata = YAML.load(File.open(File.join(obj_root,"metadata"),'rb'))
         real_obj.name = object_name
         real_obj.md5 = metadata[:md5]
