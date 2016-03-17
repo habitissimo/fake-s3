@@ -448,6 +448,7 @@ module FakeS3
         root_offset = src_elems[0] == "" ? 1 : 0
         s_req.src_bucket = src_elems[root_offset]
         s_req.src_object = src_elems[1 + root_offset,src_elems.size].join("/")
+        s_req.src_object = CGI::unescape(s_req.src_object)
         s_req.type = Request::COPY
       end
 
