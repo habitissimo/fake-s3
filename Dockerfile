@@ -1,4 +1,4 @@
-FROM ruby:2.2.0
+FROM ruby:2.2
 
 WORKDIR /opt/fakes3
 
@@ -13,4 +13,5 @@ ADD . /opt/fakes3
 
 EXPOSE 80
 
-CMD ["/opt/fakes3/bin/fakes3", "-r", "/var/data/fakes3", "-p", "80"]
+ENTRYPOINT ["/opt/fakes3/bin/fakes3"]
+CMD ["-r", "/var/data/fakes3", "-p", "80"]
