@@ -10,4 +10,12 @@ WORKDIR /app
 
 RUN bundle install
 
+EXPOSE 80
+
 COPY . /app/
+
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+CMD ["--root", "/var/data/fakes3", "--port", "80"]
